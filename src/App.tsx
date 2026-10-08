@@ -92,6 +92,7 @@ export default function App() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const ADMIN_EMAIL = 'rehmanglobal.contact@gmail.com';
 
   // Shared live state from backend / Firestore
   const [applicants, setApplicants] = useState<ApplicantItem[]>([]);
@@ -170,16 +171,22 @@ export default function App() {
   }, []);
 
   // Enforce private route protection on /admin/dashboard and /admin/login
-  useEffect(() => {
-    if (!authInitialized) return;
-    if (activeView === 'admin-dashboard' && !currentUser) {
-      window.history.replaceState({}, '', '/admin/login');
-      setActiveView('admin-login');
-    } else if (activeView === 'admin-login' && currentUser) {
-      window.history.replaceState({}, '', '/admin/dashboard');
-      setActiveView('admin-dashboard');
-    }
-  }, [activeView, currentUser, authInitialized]);
+useEffect(() => {
+  if (!authInitialized) return;
+
+  const ADMIN_EMAIL = 'rehmanglobal.contact@gmail.com';
+
+  const isAuthorizedAdmin =
+    currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  if (activeView === 'admin-dashboard' && !isAuthorizedAdmin) {
+    window.history.replaceState({}, '', '/admin/login');
+    setActiveView('admin-login');
+  } else if (activeView === 'admin-login' && isAuthorizedAdmin) {
+    window.history.replaceState({}, '', '/admin/dashboard');
+    setActiveView('admin-dashboard');
+  }
+}, [activeView, currentUser, authInitialized]);
 
   const handleNavigate = (view: ActiveView, sectionId?: string) => {
     const targetPath = viewToPathname(view);
@@ -285,7 +292,8 @@ export default function App() {
           />
         )}
 
-        {activeView === 'admin-dashboard' && currentUser && (
+        {activeView === 'admin-dashboard' &&
+  currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
           <AdminDashboardView
             currentUser={currentUser}
             applicants={applicants}
