@@ -1,0 +1,27 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>REHMAN GWS</title>
+  <script>
+    (function () {
+      var base = '/rehman-gws-website';
+      var path = window.location.pathname;
+
+      if (path.indexOf(base + '/') === 0) {
+        var route = path.slice(base.length);
+        var query = window.location.search;
+        var hash = window.location.hash;
+
+        window.location.replace(
+          base + '/?/' + route.replace(/&/g, '~and~') +
+          (query ? '&' + query.slice(1).replace(/&/g, '~and~') : '') +
+          hash
+        );
+      }
+    })();
+  </script>
+</head>
+<body></body>
+</html>
