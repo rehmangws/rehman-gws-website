@@ -50,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeView, onNavigate }) => {
         <BrandLogo
           size="header"
           showText={true}
-          showUploadHelper={true}
+          showUploadHelper={false}
           onLogoClick={() => handleNav('home')}
         />
 
