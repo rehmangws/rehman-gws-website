@@ -71,20 +71,36 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
   };
 
   const handleGoogleLogin = async () => {
-    setErrorMsg(null);
-    setResetSuccessMsg(null);
-    setLoading(true);
-    try {
-      await signInWithGoogle(rememberMe);
-      onLoginSuccess();
-    } catch (err: any) {
+  setErrorMsg(null);
+  setResetSuccessMsg(null);
+  setLoading(true);
+
+  try {
+    const user = await signInWithGoogle(rememberMe);
+
+    const ADMIN_EMAIL = 'rehmanglobal.contact@gmail.com';
+
+    if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       setErrorMsg(
-        err?.message || 'Google Admin authentication was cancelled or failed.'
+        'This Google account is not authorized to access the REHMAN GWS Admin Dashboard.'
       );
-    } finally {
-      setLoading(false);
+
+      // Sign out unauthorized Google account
+      const { signOutUser } = await import('../lib/firebase');
+      await signOutUser();
+
+      return;
     }
-  };
+
+    onLoginSuccess();
+  } catch (err: any) {
+    setErrorMsg(
+      err?.message || 'Google Admin authentication was cancelled or failed.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
