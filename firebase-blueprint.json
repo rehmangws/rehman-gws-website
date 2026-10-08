@@ -1,0 +1,570 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated user profile with isolated non-role metadata.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the user.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of user profile creation."
+        }
+      },
+      "required": ["uid", "displayName", "email", "createdAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Trusted admin user record used for RBAC verification.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified administrator email address.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin record was created."
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Applicant": {
+      "title": "Applicant",
+      "description": "Job seeker application record containing candidate credentials, CV reference, and review status.",
+      "type": "object",
+      "properties": {
+        "applicantId": {
+          "type": "string",
+          "description": "Unique applicant code such as RGS-EMP-00001.",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the authenticated submitter.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Full name of the applicant.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Applicant email address.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "description": "Applicant phone or WhatsApp number.",
+          "minLength": 5,
+          "maxLength": 40
+        },
+        "country": {
+          "type": "string",
+          "description": "Applicant country of residence.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "city": {
+          "type": "string",
+          "description": "Applicant city.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "position": {
+          "type": "string",
+          "description": "Position applying for.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Job category.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "experience": {
+          "type": "string",
+          "description": "Years and summary of professional experience.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "skills": {
+          "type": "string",
+          "description": "Comma-separated skills list.",
+          "minLength": 2,
+          "maxLength": 500
+        },
+        "expectedSalary": {
+          "type": "string",
+          "description": "Optional expected compensation.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "availability": {
+          "type": "string",
+          "description": "Notice period or availability to start.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "cvUrl": {
+          "type": "string",
+          "description": "Secure CV document reference or encoded data URI.",
+          "minLength": 1,
+          "maxLength": 350000
+        },
+        "cvFileName": {
+          "type": "string",
+          "description": "Original filename of uploaded CV.",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "message": {
+          "type": "string",
+          "description": "Additional cover note from applicant.",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "notes": {
+          "type": "string",
+          "description": "Internal recruitment notes managed by admin.",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Current pipeline stage of the application.",
+          "enum": ["New", "Reviewed", "Shortlisted", "Contacted", "Interview", "Selected", "Rejected", "Hired", "Archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of submission."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": [
+        "applicantId",
+        "ownerId",
+        "fullName",
+        "email",
+        "phone",
+        "country",
+        "city",
+        "position",
+        "category",
+        "experience",
+        "skills",
+        "expectedSalary",
+        "availability",
+        "cvUrl",
+        "cvFileName",
+        "message",
+        "notes",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StaffingRequest": {
+      "title": "StaffingRequest",
+      "description": "Employer staffing request submitted by businesses seeking workforce recruitment.",
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string",
+          "description": "Unique staffing request identifier such as RGS-STAFF-00001.",
+          "minLength": 5,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the authenticated submitter.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Registered or operating business name.",
+          "minLength": 2,
+          "maxLength": 150
+        },
+        "contactPerson": {
+          "type": "string",
+          "description": "Primary hiring contact name.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Business email address.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "description": "Business phone or WhatsApp contact.",
+          "minLength": 5,
+          "maxLength": 40
+        },
+        "businessType": {
+          "type": "string",
+          "description": "Industry or business classification.",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "country": {
+          "type": "string",
+          "description": "Country where staff is needed.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "city": {
+          "type": "string",
+          "description": "City or site location.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "position": {
+          "type": "string",
+          "description": "Role title required.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Workforce category.",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "numberRequired": {
+          "type": "number",
+          "description": "Number of employees requested."
+        },
+        "experienceRequired": {
+          "type": "string",
+          "description": "Minimum experience level required.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "employmentType": {
+          "type": "string",
+          "description": "Full-time, Part-time, Contract, Remote, or On-site.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "salaryBudget": {
+          "type": "string",
+          "description": "Monthly or annual compensation budget.",
+          "minLength": 0,
+          "maxLength": 100
+        },
+        "requiredSkills": {
+          "type": "string",
+          "description": "Key skills required for the role.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "jobDescription": {
+          "type": "string",
+          "description": "Core duties and scope of role.",
+          "minLength": 0,
+          "maxLength": 2000
+        },
+        "additionalRequirements": {
+          "type": "string",
+          "description": "Any extra onboarding or compliance notes.",
+          "minLength": 0,
+          "maxLength": 1500
+        },
+        "status": {
+          "type": "string",
+          "description": "Current fulfillment status of the staffing request.",
+          "enum": ["New", "Contacted", "In Progress", "Candidates Found", "Interview", "Filled", "Closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of request creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status update."
+        }
+      },
+      "required": [
+        "requestId",
+        "ownerId",
+        "businessName",
+        "contactPerson",
+        "email",
+        "phone",
+        "businessType",
+        "country",
+        "city",
+        "position",
+        "category",
+        "numberRequired",
+        "experienceRequired",
+        "employmentType",
+        "salaryBudget",
+        "requiredSkills",
+        "jobDescription",
+        "additionalRequirements",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "Published job opportunity available on the REHMAN GWS Career Portal.",
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "description": "Unique job identifier.",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Job title.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "company": {
+          "type": "string",
+          "description": "Hiring division or client organization description.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "description": "Sector category (Hospitality, Office & Administration, IT & Digital, Sales & Marketing, General Workforce).",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "location": {
+          "type": "string",
+          "description": "City and country of placement.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "employmentType": {
+          "type": "string",
+          "description": "Full-time, Part-time, Contract, or Remote.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "experience": {
+          "type": "string",
+          "description": "Required experience bracket.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "salary": {
+          "type": "string",
+          "description": "Compensation range.",
+          "minLength": 0,
+          "maxLength": 80
+        },
+        "description": {
+          "type": "string",
+          "description": "Short summary of duties and candidate profile.",
+          "minLength": 10,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Listing availability status.",
+          "enum": ["Open", "Closed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of publication."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last modification."
+        }
+      },
+      "required": [
+        "jobId",
+        "title",
+        "company",
+        "category",
+        "location",
+        "employmentType",
+        "experience",
+        "salary",
+        "description",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Business enquiry submitted through the Let's Work Together contact form.",
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "description": "Unique message identifier.",
+          "minLength": 3,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of authenticated submitter.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Sender full name.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Sender email address.",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "phone": {
+          "type": "string",
+          "description": "Sender phone or WhatsApp number.",
+          "minLength": 0,
+          "maxLength": 40
+        },
+        "company": {
+          "type": "string",
+          "description": "Sender company name.",
+          "minLength": 0,
+          "maxLength": 120
+        },
+        "serviceRequired": {
+          "type": "string",
+          "description": "Primary service category of interest.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed enquiry message.",
+          "minLength": 5,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "description": "Enquiry handling status.",
+          "enum": ["New", "Replied", "Archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of message creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last status change."
+        }
+      },
+      "required": [
+        "messageId",
+        "ownerId",
+        "name",
+        "email",
+        "phone",
+        "company",
+        "serviceRequired",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Authenticated user profiles isolated to owner and admin."
+    },
+    "/adminUsers/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Trusted administrator lookup collection."
+    },
+    "/applicants/{applicantId}": {
+      "schema": { "$ref": "#/entities/Applicant" },
+      "description": "Job seeker applications and private CV links."
+    },
+    "/staffingRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/StaffingRequest" },
+      "description": "Employer staffing requests and requirements."
+    },
+    "/jobs/{jobId}": {
+      "schema": { "$ref": "#/entities/Job" },
+      "description": "Publicly readable job openings managed exclusively by admins."
+    },
+    "/contactMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Direct business enquiries submitted via the contact form."
+    }
+  }
+}
