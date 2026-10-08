@@ -25,10 +25,19 @@ import { AboutSection, ContactSection } from './components/AboutAndContact';
 import { AdminLoginView } from './components/AdminLoginView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 
+
 function resolveViewFromLocation(): ActiveView {
-  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  const base = '/rehman-gws-website';
+  let path = window.location.pathname;
+
+  if (path.startsWith(base)) {
+    path = path.slice(base.length) || '/';
+  }
+
+  path = path.replace(/\/+$/, '') || '/';
+
   if (path === '/admin') {
-    window.history.replaceState({}, '', '/admin/login');
+    window.history.replaceState({}, '', `${base}/admin/login`);
     return 'admin-login';
   }
   if (path === '/admin/login') return 'admin-login';
@@ -41,10 +50,9 @@ function resolveViewFromLocation(): ActiveView {
 
   const params = new URLSearchParams(window.location.search);
   const v = params.get('view');
-  if (v === 'admin') {
-    window.history.replaceState({}, '', '/admin/login');
-    return 'admin-login';
-  }
+
+  if (v === 'admin') return 'admin-login';
+
   if (
     v &&
     [
@@ -60,28 +68,33 @@ function resolveViewFromLocation(): ActiveView {
   ) {
     return v as ActiveView;
   }
+
   return 'home';
 }
 
+
+
 function viewToPathname(view: ActiveView): string {
+  const base = '/rehman-gws-website';
+
   switch (view) {
     case 'about':
-      return '/about';
+      return `${base}/about`;
     case 'services':
-      return '/services';
+      return `${base}/services`;
     case 'jobs':
-      return '/jobs';
+      return `${base}/jobs`;
     case 'employers':
-      return '/employers';
+      return `${base}/employers`;
     case 'contact':
-      return '/contact';
+      return `${base}/contact`;
     case 'admin-login':
-      return '/admin/login';
+      return `${base}/admin/login`;
     case 'admin-dashboard':
-      return '/admin/dashboard';
+      return `${base}/admin/dashboard`;
     case 'home':
     default:
-      return '/';
+      return `${base}/`;
   }
 }
 
@@ -180,10 +193,10 @@ useEffect(() => {
     currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   if (activeView === 'admin-dashboard' && !isAuthorizedAdmin) {
-    window.history.replaceState({}, '', '/admin/login');
+    window.history.replaceState({}, '', viewToPathname('admin-login'));
     setActiveView('admin-login');
   } else if (activeView === 'admin-login' && isAuthorizedAdmin) {
-    window.history.replaceState({}, '', '/admin/dashboard');
+    window.history.replaceState({}, '', viewToPathname('admin-dashboard'));
     setActiveView('admin-dashboard');
   }
 }, [activeView, currentUser, authInitialized]);
