@@ -69,7 +69,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
     <>
       {logoExists && (
         <img
-          src={`/assets/rehman-gws-logo.png${cacheBuster}`}
+          src={`${import.meta.env.BASE_URL}assets/rehman-gws-logo.png${cacheBuster}`}
           alt="REHMAN GWS - Global Work Solutions"
           style={{ objectFit: 'contain' }}
           onError={() => setLogoExists(false)}
