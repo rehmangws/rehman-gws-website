@@ -50,9 +50,23 @@ export const AdminLoginView: React.FC<AdminLoginViewProps> = ({
 
     setLoading(true);
     try {
-      await signInAdminWithEmail(email, password, rememberMe);
-      onLoginSuccess();
-    } catch (err: any) {
+  const user = await signInAdminWithEmail(email, password, rememberMe);
+
+  const ADMIN_EMAIL = 'rehmanglobal.contact@gmail.com';
+
+  if (user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    const { signOutUser } = await import('../lib/firebase');
+    await signOutUser();
+
+    setErrorMsg(
+      'This account is not authorized to access the REHMAN GWS Admin Dashboard.'
+    );
+
+    return;
+  }
+
+  onLoginSuccess();
+} catch (err: any) {
       const code = err?.code || '';
       if (
         code === 'auth/invalid-credential' ||
