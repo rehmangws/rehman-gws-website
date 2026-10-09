@@ -26,6 +26,7 @@ import { AdminLoginView } from './components/AdminLoginView';
 import { AdminDashboardView } from './components/AdminDashboardView';
 
 
+
 function resolveViewFromLocation(): ActiveView {
   const base = '/rehman-gws-website';
   let path = window.location.pathname;
@@ -36,12 +37,14 @@ function resolveViewFromLocation(): ActiveView {
 
   path = path.replace(/\/+$/, '') || '/';
 
-  if (path === '/admin') {
-    window.history.replaceState({}, '', `${base}/admin/login`);
+  if (path === '/admin' || path === '/admin/login') {
     return 'admin-login';
   }
-  if (path === '/admin/login') return 'admin-login';
-  if (path === '/admin/dashboard') return 'admin-dashboard';
+
+  if (path === '/admin/dashboard') {
+    return 'admin-dashboard';
+  }
+
   if (path === '/about') return 'about';
   if (path === '/services') return 'services';
   if (path === '/jobs') return 'jobs';
@@ -49,12 +52,13 @@ function resolveViewFromLocation(): ActiveView {
   if (path === '/contact') return 'contact';
 
   const params = new URLSearchParams(window.location.search);
-  const v = params.get('view');
+  const view = params.get('view');
 
-  if (v === 'admin') return 'admin-login';
+  if (view === 'admin') return 'admin-login';
+  if (view === 'admin-dashboard') return 'admin-dashboard';
 
   if (
-    v &&
+    view &&
     [
       'home',
       'about',
@@ -63,15 +67,13 @@ function resolveViewFromLocation(): ActiveView {
       'employers',
       'contact',
       'admin-login',
-      'admin-dashboard',
-    ].includes(v)
+    ].includes(view)
   ) {
-    return v as ActiveView;
+    return view as ActiveView;
   }
 
   return 'home';
 }
-
 
 
 function viewToPathname(view: ActiveView): string {
@@ -296,14 +298,19 @@ useEffect(() => {
         )}
 
         {activeView === 'admin-login' && (
-          <AdminLoginView
-            onLoginSuccess={() => {
-              loadAdminData();
-              handleNavigate('admin-dashboard');
-            }}
-            onNavigate={handleNavigate}
-          />
-        )}
+  <AdminLoginView
+    onLoginSuccess={() => {
+      window.history.replaceState(
+        {},
+        '',
+        viewToPathname('admin-dashboard')
+      );
+      setActiveView('admin-dashboard');
+      loadAdminData();
+    }}
+    onNavigate={handleNavigate}
+  />
+)}
 
         {activeView === 'admin-dashboard' &&
   currentUser?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() && (
