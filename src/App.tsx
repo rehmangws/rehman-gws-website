@@ -31,8 +31,22 @@ function resolveViewFromLocation(): ActiveView {
   const base = '/rehman-gws-website';
   let path = window.location.pathname;
 
-  if (path.startsWith(base)) {
-    path = path.slice(base.length) || '/';
+  if (path === base || path === base + '/') {
+    path = '/';
+  } else if (path.startsWith(base + '/')) {
+    path = path.slice(base.length);
+  }
+
+  const search = window.location.search;
+
+  // Restore the route from GitHub Pages 404 redirect
+  if (search.startsWith('?/')) {
+    const route = search
+      .slice(2)
+      .split('&')[0]
+      .replace(/~and~/g, '&');
+
+    path = route.startsWith('/') ? route : '/' + route;
   }
 
   path = path.replace(/\/+$/, '') || '/';
@@ -51,7 +65,7 @@ function resolveViewFromLocation(): ActiveView {
   if (path === '/employers') return 'employers';
   if (path === '/contact') return 'contact';
 
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(search);
   const view = params.get('view');
 
   if (view === 'admin') return 'admin-login';
@@ -74,7 +88,6 @@ function resolveViewFromLocation(): ActiveView {
 
   return 'home';
 }
-
 
 function viewToPathname(view: ActiveView): string {
   const base = '/rehman-gws-website';
