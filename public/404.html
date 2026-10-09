@@ -1,8 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>REHMAN GWS</title>
   <script>
     (function () {
@@ -14,14 +14,19 @@
         var query = window.location.search;
         var hash = window.location.hash;
 
-        window.location.replace(
-          base + '/?/' + route.replace(/&/g, '~and~') +
+        var newUrl = base + '/?/' +
+          route.replace(/&/g, '~and~') +
           (query ? '&' + query.slice(1).replace(/&/g, '~and~') : '') +
-          hash
-        );
+          hash;
+
+        window.location.replace(newUrl);
+      } else {
+        window.location.replace(base + '/');
       }
     })();
   </script>
 </head>
-<body></body>
+<body>
+  <p>Redirecting to REHMAN GWS...</p>
+</body>
 </html>
