@@ -1,3 +1,4 @@
+
 import {
   doc,
   setDoc,
@@ -12,6 +13,10 @@ import {
   OperationType,
   getAdminAuthHeaders,
 } from '../lib/firebase';
+
+// Cloudflare Worker API URL
+const API_BASE_URL =
+  'https://rehman-gws-api.rehmanglobal-contact.workers.dev';
 
 export interface ApplicantItem {
   applicantId: string;
@@ -64,7 +69,14 @@ export interface StaffingRequestItem {
   requiredSkills: string;
   jobDescription: string;
   additionalRequirements: string;
-  status: 'New' | 'Contacted' | 'In Progress' | 'Candidates Found' | 'Interview' | 'Filled' | 'Closed';
+  status:
+    | 'New'
+    | 'Contacted'
+    | 'In Progress'
+    | 'Candidates Found'
+    | 'Interview'
+    | 'Filled'
+    | 'Closed';
   createdAt: string;
   updatedAt: string;
 }
@@ -113,15 +125,19 @@ function clampString(val: string, max: number): string {
   return (val || '').trim().slice(0, max);
 }
 
-// Fetch all public jobs (safe for public visitors; contains zero applicant/CV PII)
+// Public website: load job listings
 export async function fetchJobs(): Promise<JobItem[]> {
-  const res = await fetch('/api/jobs');
-  if (!res.ok) throw new Error('Failed to load jobs');
+  const res = await fetch(`${API_BASE_URL}/api/jobs`);
+
+  if (!res.ok) {
+    throw new Error('Failed to load jobs');
+  }
+
   const data = await res.json();
   return data.jobs || [];
 }
 
-// Fetch protected admin dashboard data (requires authenticated Firebase session)
+// Admin dashboard: load protected data
 export async function fetchAdminOverview(): Promise<{
   applicants: ApplicantItem[];
   staffingRequests: StaffingRequestItem[];
@@ -135,12 +151,19 @@ export async function fetchAdminOverview(): Promise<{
   };
 }> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch('/api/admin/overview', { headers });
-  if (!res.ok) throw new Error('Unauthorized or failed to load admin overview');
+
+  const res = await fetch(`${API_BASE_URL}/api/admin/overview`, {
+    headers,
+  });
+
+  if (!res.ok) {
+    throw new Error('Unauthorized or failed to load admin overview');
+  }
+
   return res.json();
 }
 
-// Submit Job Seeker Application (Backend DB + Email Notification + Firestore when authenticated)
+// Submit job application
 export async function submitJobApplication(payload: {
   fullName: string;
   email: string;
@@ -160,22 +183,26 @@ export async function submitJobApplication(payload: {
   const currentUser = auth.currentUser;
   const ownerId = currentUser?.uid || 'public_applicant';
 
-  const res = await fetch('/api/applicants', {
+  const res = await fetch(`${API_BASE_URL}/api/applicants`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ ...payload, ownerId }),
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || 'Could not submit application.');
   }
 
   const applicant: ApplicantItem = data.applicant;
 
-  // If authenticated with a verified account, also persist directly to Firestore
+  // Optional Firestore mirror for a signed-in, verified user
   if (currentUser && currentUser.emailVerified) {
     const path = `applicants/${applicant.applicantId}`;
+
     try {
       await setDoc(doc(db, 'applicants', applicant.applicantId), {
         applicantId: clampString(applicant.applicantId, 64),
@@ -207,7 +234,7 @@ export async function submitJobApplication(payload: {
   return { applicant };
 }
 
-// Submit Employer Staffing Request (Backend DB + Email Notification + Firestore when authenticated)
+// Submit employer staffing request
 export async function submitStaffingRequest(payload: {
   businessName: string;
   contactPerson: string;
@@ -229,13 +256,16 @@ export async function submitStaffingRequest(payload: {
   const currentUser = auth.currentUser;
   const ownerId = currentUser?.uid || 'public_employer';
 
-  const res = await fetch('/api/staffing-requests', {
+  const res = await fetch(`${API_BASE_URL}/api/staffing-requests`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ ...payload, ownerId }),
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || 'Could not submit staffing request.');
   }
@@ -244,6 +274,7 @@ export async function submitStaffingRequest(payload: {
 
   if (currentUser && currentUser.emailVerified) {
     const path = `staffingRequests/${staffingRequest.requestId}`;
+
     try {
       await setDoc(doc(db, 'staffingRequests', staffingRequest.requestId), {
         requestId: clampString(staffingRequest.requestId, 64),
@@ -257,13 +288,25 @@ export async function submitStaffingRequest(payload: {
         city: clampString(staffingRequest.city, 80),
         position: clampString(staffingRequest.position, 120),
         category: clampString(staffingRequest.category, 80),
-        numberRequired: Math.max(1, Math.min(10000, Math.floor(Number(staffingRequest.numberRequired) || 1))),
-        experienceRequired: clampString(staffingRequest.experienceRequired, 80),
+        numberRequired: Math.max(
+          1,
+          Math.min(
+            10000,
+            Math.floor(Number(staffingRequest.numberRequired) || 1)
+          )
+        ),
+        experienceRequired: clampString(
+          staffingRequest.experienceRequired,
+          80
+        ),
         employmentType: clampString(staffingRequest.employmentType, 60),
         salaryBudget: clampString(staffingRequest.salaryBudget, 100),
         requiredSkills: clampString(staffingRequest.requiredSkills, 500),
         jobDescription: clampString(staffingRequest.jobDescription, 2000),
-        additionalRequirements: clampString(staffingRequest.additionalRequirements, 1500),
+        additionalRequirements: clampString(
+          staffingRequest.additionalRequirements,
+          1500
+        ),
         status: 'New',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -276,7 +319,7 @@ export async function submitStaffingRequest(payload: {
   return { staffingRequest };
 }
 
-// Submit Contact Form Enquiry
+// Submit contact form enquiry
 export async function submitContactEnquiry(payload: {
   name: string;
   email: string;
@@ -288,13 +331,16 @@ export async function submitContactEnquiry(payload: {
   const currentUser = auth.currentUser;
   const ownerId = currentUser?.uid || 'public_visitor';
 
-  const res = await fetch('/api/contact', {
+  const res = await fetch(`${API_BASE_URL}/api/contact`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ ...payload, ownerId }),
   });
 
   const data = await res.json();
+
   if (!res.ok) {
     throw new Error(data.error || 'Could not send enquiry.');
   }
@@ -303,6 +349,7 @@ export async function submitContactEnquiry(payload: {
 
   if (currentUser && currentUser.emailVerified) {
     const path = `contactMessages/${contactMessage.messageId}`;
+
     try {
       await setDoc(doc(db, 'contactMessages', contactMessage.messageId), {
         messageId: clampString(contactMessage.messageId, 64),
@@ -325,86 +372,135 @@ export async function submitContactEnquiry(payload: {
   return { contactMessage };
 }
 
-// Admin: Update Applicant Status or Notes
+// Admin: update applicant status or notes
 export async function updateApplicantRecord(
   applicantId: string,
   updates: { status?: ApplicantItem['status']; notes?: string }
 ): Promise<ApplicantItem> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/applicants/${applicantId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify(updates),
-  });
-  if (!res.ok) throw new Error('Failed to update applicant');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/applicants/${encodeURIComponent(applicantId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to update applicant');
+  }
+
   const data = await res.json();
 
-  if (auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' && auth.currentUser.emailVerified) {
+  if (
+    auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' &&
+    auth.currentUser.emailVerified
+  ) {
     try {
       await updateDoc(doc(db, 'applicants', applicantId), {
         ...(updates.status ? { status: updates.status } : {}),
-        ...(updates.notes !== undefined ? { notes: clampString(updates.notes, 2000) } : {}),
+        ...(updates.notes !== undefined
+          ? { notes: clampString(updates.notes, 2000) }
+          : {}),
         updatedAt: serverTimestamp(),
       });
     } catch {
-      // Document may only exist in backend seed DB if submitted by unauthenticated visitor
+      // The record may exist only in the backend database.
     }
   }
+
   return data.applicant;
 }
 
-export async function deleteApplicantRecord(applicantId: string): Promise<void> {
+export async function deleteApplicantRecord(
+  applicantId: string
+): Promise<void> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/applicants/${applicantId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) throw new Error('Failed to delete applicant');
 
-  if (auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' && auth.currentUser.emailVerified) {
+  const res = await fetch(
+    `${API_BASE_URL}/api/applicants/${encodeURIComponent(applicantId)}`,
+    {
+      method: 'DELETE',
+      headers,
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to delete applicant');
+  }
+
+  if (
+    auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' &&
+    auth.currentUser.emailVerified
+  ) {
     try {
       await deleteDoc(doc(db, 'applicants', applicantId));
     } catch {
-      // Ignore if not mirrored in Firestore
+      // Ignore if not mirrored in Firestore.
     }
   }
 }
 
+// Admin: update staffing request status
 export async function updateStaffingRequestStatus(
   requestId: string,
   status: StaffingRequestItem['status']
 ): Promise<StaffingRequestItem> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/staffing-requests/${requestId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ status }),
-  });
-  if (!res.ok) throw new Error('Failed to update staffing request');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/staffing-requests/${encodeURIComponent(requestId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to update staffing request');
+  }
+
   const data = await res.json();
 
-  if (auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' && auth.currentUser.emailVerified) {
+  if (
+    auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' &&
+    auth.currentUser.emailVerified
+  ) {
     try {
       await updateDoc(doc(db, 'staffingRequests', requestId), {
         status,
         updatedAt: serverTimestamp(),
       });
     } catch {
-      // Ignore if not mirrored in Firestore
+      // Ignore if not mirrored in Firestore.
     }
   }
+
   return data.staffingRequest;
 }
 
-export async function deleteStaffingRequestRecord(requestId: string): Promise<void> {
+export async function deleteStaffingRequestRecord(
+  requestId: string
+): Promise<void> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/staffing-requests/${requestId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) throw new Error('Failed to delete staffing request');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/staffing-requests/${encodeURIComponent(requestId)}`,
+    {
+      method: 'DELETE',
+      headers,
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to delete staffing request');
+  }
 }
 
+// Admin: create a job listing
 export async function createNewJobListing(payload: {
   title: string;
   company: string;
@@ -416,17 +512,27 @@ export async function createNewJobListing(payload: {
   description: string;
 }): Promise<JobItem> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch('/api/jobs', {
+
+  const res = await fetch(`${API_BASE_URL}/api/jobs`, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
   });
+
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to create job');
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to create job');
+  }
 
   const job: JobItem = data.job;
-  if (auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' && auth.currentUser.emailVerified) {
+
+  if (
+    auth.currentUser?.email === 'rehmanglobal.contact@gmail.com' &&
+    auth.currentUser.emailVerified
+  ) {
     const path = `jobs/${job.jobId}`;
+
     try {
       await setDoc(doc(db, 'jobs', job.jobId), {
         jobId: clampString(job.jobId, 64),
@@ -446,50 +552,88 @@ export async function createNewJobListing(payload: {
       handleFirestoreError(error, OperationType.CREATE, path);
     }
   }
+
   return job;
 }
 
-export async function updateJobStatus(jobId: string, status: 'Open' | 'Closed'): Promise<JobItem> {
+// Admin: update job status
+export async function updateJobStatus(
+  jobId: string,
+  status: 'Open' | 'Closed'
+): Promise<JobItem> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/jobs/${jobId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ status }),
-  });
-  if (!res.ok) throw new Error('Failed to update job status');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to update job status');
+  }
+
   const data = await res.json();
   return data.job;
 }
 
 export async function deleteJobListing(jobId: string): Promise<void> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/jobs/${jobId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) throw new Error('Failed to delete job');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/jobs/${encodeURIComponent(jobId)}`,
+    {
+      method: 'DELETE',
+      headers,
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to delete job');
+  }
 }
 
+// Admin: update contact message status
 export async function updateContactMessageStatus(
   messageId: string,
   status: ContactMessageItem['status']
 ): Promise<ContactMessageItem> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/contact/${messageId}`, {
-    method: 'PATCH',
-    headers,
-    body: JSON.stringify({ status }),
-  });
-  if (!res.ok) throw new Error('Failed to update message status');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/contact/${encodeURIComponent(messageId)}`,
+    {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to update message status');
+  }
+
   const data = await res.json();
   return data.contactMessage;
 }
 
-export async function deleteContactMessageRecord(messageId: string): Promise<void> {
+export async function deleteContactMessageRecord(
+  messageId: string
+): Promise<void> {
   const headers = await getAdminAuthHeaders();
-  const res = await fetch(`/api/contact/${messageId}`, {
-    method: 'DELETE',
-    headers,
-  });
-  if (!res.ok) throw new Error('Failed to delete message');
+
+  const res = await fetch(
+    `${API_BASE_URL}/api/contact/${encodeURIComponent(messageId)}`,
+    {
+      method: 'DELETE',
+      headers,
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to delete message');
+  }
 }
