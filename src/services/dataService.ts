@@ -261,13 +261,19 @@ export async function submitStaffingRequest(payload: {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ ...payload, ownerId }),
+    body: JSON.stringify({
+      ...payload,
+      company_name: payload.businessName,
+      ownerId,
+    }),
   });
 
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || 'Could not submit staffing request.');
+    throw new Error(
+      data.error || 'Could not submit staffing request.'
+    );
   }
 
   const staffingRequest: StaffingRequestItem = data.staffingRequest;
@@ -318,6 +324,7 @@ export async function submitStaffingRequest(payload: {
 
   return { staffingRequest };
 }
+
 
 // Submit contact form enquiry
 export async function submitContactEnquiry(payload: {
