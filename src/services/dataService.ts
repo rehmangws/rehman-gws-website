@@ -193,11 +193,16 @@ export async function submitJobApplication(payload: {
 
   const data = await res.json();
 
-  if (!res.ok) {
-    throw new Error(data.error || 'Could not submit application.');
-  }
+if (!res.ok) {
+  throw new Error(data.error || 'Could not submit application.');
+}
 
-  const applicant: ApplicantItem = data.applicant;
+const applicant: ApplicantItem = {
+  ...payload,
+  applicantId: data.applicant?.applicantId || data.id,
+  fullName: payload.fullName,
+  status: 'New',
+} as ApplicantItem;
 
   // Optional Firestore mirror for a signed-in, verified user
   if (currentUser && currentUser.emailVerified) {
