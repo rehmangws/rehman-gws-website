@@ -137,6 +137,131 @@ export async function fetchJobs(): Promise<JobItem[]> {
   return data.jobs || [];
 }
 
+
+function normalizeApplicant(raw: any): ApplicantItem {
+  const record = {
+    ...(raw?.data && typeof raw.data === 'object' ? raw.data : {}),
+    ...(raw || {}),
+  };
+
+  const asText = (value: unknown): string =>
+    value == null ? '' : String(value);
+
+  const createdAt =
+    record.createdAt ||
+    record.created_at ||
+    record.createdAtMs ||
+    record.timestamp ||
+    '';
+
+  const updatedAt =
+    record.updatedAt ||
+    record.updated_at ||
+    createdAt;
+
+  const rawStatus = asText(record.status || 'New');
+  const validStatuses = [
+    'New',
+    'Reviewed',
+    'Shortlisted',
+    'Contacted',
+    'Interview',
+    'Selected',
+    'Rejected',
+    'Hired',
+    'Archived',
+  ];
+
+  return {
+    applicantId: asText(record.applicantId || record.applicant_id || record.id),
+    ownerId: asText(record.ownerId || record.owner_id),
+    fullName: asText(record.fullName || record.full_name || record.name),
+    email: asText(record.email),
+    phone: asText(record.phone),
+    country: asText(record.country),
+    city: asText(record.city),
+    position: asText(record.position || record.jobTitle),
+    category: asText(record.category),
+    experience: asText(record.experience),
+    skills: asText(record.skills),
+    expectedSalary: asText(record.expectedSalary || record.expected_salary),
+    availability: asText(record.availability),
+    cvUrl: asText(record.cvUrl || record.cv_url),
+    cvFileName: asText(record.cvFileName || record.cv_file_name),
+    message: asText(record.message),
+    notes: asText(record.notes),
+    status: (validStatuses.includes(rawStatus) ? rawStatus : 'New') as ApplicantItem['status'],
+    createdAt: asText(createdAt),
+    updatedAt: asText(updatedAt),
+  };
+}
+
+  const record = {
+    ...(raw?.data && typeof raw.data === 'object' ? raw.data : {}),
+    ...(raw || {}),
+  };
+
+  const asText = (value: unknown): string =>
+    value == null ? '' : String(value);
+
+  const createdAt =
+    record.createdAt ||
+    record.created_at ||
+    record.timestamp ||
+    '';
+
+  const updatedAt =
+    record.updatedAt ||
+    record.updated_at ||
+    createdAt;
+
+  const rawStatus = asText(record.status || 'New');
+  const validStatuses = [
+    'New',
+    'Reviewed',
+    'Shortlisted',
+    'Contacted',
+    'Interview',
+    'Selected',
+    'Rejected',
+    'Hired',
+    'Archived',
+  ];
+
+  const status = validStatuses.includes(rawStatus)
+    ? rawStatus
+    : 'New';
+
+  return {
+    applicantId: asText(
+      record.applicantId || record.applicant_id || record.id
+    ),
+    ownerId: asText(record.ownerId || record.owner_id),
+    fullName: asText(
+      record.fullName || record.full_name || record.name
+    ),
+    email: asText(record.email),
+    phone: asText(record.phone),
+    country: asText(record.country),
+    city: asText(record.city),
+    position: asText(record.position || record.jobTitle),
+    category: asText(record.category),
+    experience: asText(record.experience),
+    skills: asText(record.skills),
+    expectedSalary: asText(
+      record.expectedSalary || record.expected_salary
+    ),
+    availability: asText(record.availability),
+    cvUrl: asText(record.cvUrl || record.cv_url),
+    cvFileName: asText(record.cvFileName || record.cv_file_name),
+    message: asText(record.message),
+    notes: asText(record.notes),
+    status: status as ApplicantItem['status'],
+    createdAt: asText(createdAt),
+    updatedAt: asText(updatedAt),
+  };
+}
+
 // Admin dashboard: load protected data
 export async function fetchAdminOverview(): Promise<{
   applicants: ApplicantItem[];
@@ -160,7 +285,31 @@ export async function fetchAdminOverview(): Promise<{
     throw new Error('Unauthorized or failed to load admin overview');
   }
 
-  return res.json();
+  const data = await res.json();
+
+  const rawApplicants = Array.isArray(data.applicants)
+    ? data.applicants
+    : [];
+
+  return {
+    ...data,
+    applicants: rawApplicants.map(normalizeApplicant),
+    staffingRequests: Array.isArray(data.staffingRequests)
+      ? data.staffingRequests
+      : [],
+    jobs: Array.isArray(data.jobs) ? data.jobs : [],
+    contactMessages: Array.isArray(data.contactMessages)
+      ? data.contactMessages
+      : [],
+    emailNotifications: Array.isArray(data.emailNotifications)
+      ? data.emailNotifications
+      : [],
+    configStatus: data.configStatus || {
+      notificationRecipient: '',
+      resendConfigured: false,
+      firebaseConfigured: false,
+    },
+  };
 }
 
 // Submit job application
